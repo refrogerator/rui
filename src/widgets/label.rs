@@ -6,6 +6,10 @@ use crate::widgets::Widget;
 use super::{Color, IVec2};
 
 #[derive(Debug)]
+pub struct LabelStyle {
+}
+
+#[derive(Debug)]
 pub struct Label {
     pub font_size: f32,
     pub color: Color,

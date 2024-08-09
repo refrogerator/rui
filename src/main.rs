@@ -6,13 +6,14 @@ use swash::scale::Source;
 
 mod widgets;
 
-use widgets::Widget;
+use widgets::{ColumnContainer, Rect, Widget};
 use widgets::Label;
 use widgets::Button;
 use widgets::Offset;
 use widgets::Anchor;
 use widgets::Layout;
 use widgets::SingleContainer;
+use widgets::RowContainer;
 use widgets::Color;
 use widgets::IVec2;
 
@@ -152,47 +153,51 @@ impl DrawingContext {
         }
     }
     fn draw_rounded_quad_outline(&self, dims: &widgets::Rect, color: &Color, rounding: f32, border_thickness: f32) {
-        let window_size = self.window.drawable_size();
-        unsafe {
-            self.gl.use_program(Some(self.outline_quad_shader));
-            self.gl.uniform_2_f32(
-                self.gl
-                    .get_uniform_location(self.outline_quad_shader, "offset")
-                    .as_ref(),
-                dims.x / window_size.0 as f32,
-                dims.y / window_size.1 as f32,
-            );
-            self.gl.uniform_2_f32(
-                self.gl
-                    .get_uniform_location(self.outline_quad_shader, "scale")
-                    .as_ref(),
-                dims.w / window_size.0 as f32,
-                dims.h / window_size.1 as f32,
-            );
-            self.gl.uniform_4_f32(
-                self.gl
-                    .get_uniform_location(self.outline_quad_shader, "color")
-                    .as_ref(),
-                color.r,
-                color.g,
-                color.b,
-                1.0,
-            );
-            self.gl.uniform_1_f32(
-                self.gl
-                    .get_uniform_location(self.outline_quad_shader, "border_width")
-                    .as_ref(),
-                border_thickness,
-            );
-            self.gl.uniform_2_f32(
-                self.gl
-                    .get_uniform_location(self.outline_quad_shader, "dims")
-                    .as_ref(),
-                window_size.0 as f32,
-                window_size.1 as f32,
-            );
-            self.gl.draw_arrays(glow::TRIANGLES, 0, 6);
-        }
+        //let window_size = self.window.drawable_size();
+        self.draw_rounded_quad(&Rect { x: dims.x + border_thickness, y: dims.y, w: dims.w - border_thickness, h: border_thickness }, color, rounding);
+        self.draw_rounded_quad(&Rect { x: dims.x + dims.w - border_thickness, y: border_thickness + dims.y, w: border_thickness, h: dims.h - border_thickness }, color, rounding);
+        self.draw_rounded_quad(&Rect { x: dims.x, y: dims.y + dims.h - border_thickness, w: dims.w - border_thickness, h: border_thickness }, color, rounding);
+        self.draw_rounded_quad(&Rect { x: dims.x, y: dims.y, w: border_thickness, h: dims.h - border_thickness }, color, rounding);
+        //unsafe {
+        //    self.gl.use_program(Some(self.outline_quad_shader));
+        //    self.gl.uniform_2_f32(
+        //        self.gl
+        //            .get_uniform_location(self.outline_quad_shader, "offset")
+        //            .as_ref(),
+        //        dims.x / window_size.0 as f32,
+        //        dims.y / window_size.1 as f32,
+        //    );
+        //    self.gl.uniform_2_f32(
+        //        self.gl
+        //            .get_uniform_location(self.outline_quad_shader, "scale")
+        //            .as_ref(),
+        //        dims.w / window_size.0 as f32,
+        //        dims.h / window_size.1 as f32,
+        //    );
+        //    self.gl.uniform_4_f32(
+        //        self.gl
+        //            .get_uniform_location(self.outline_quad_shader, "color")
+        //            .as_ref(),
+        //        color.r,
+        //        color.g,
+        //        color.b,
+        //        1.0,
+        //    );
+        //    self.gl.uniform_1_f32(
+        //        self.gl
+        //            .get_uniform_location(self.outline_quad_shader, "border_width")
+        //            .as_ref(),
+        //        border_thickness,
+        //    );
+        //    self.gl.uniform_2_f32(
+        //        self.gl
+        //            .get_uniform_location(self.outline_quad_shader, "dims")
+        //            .as_ref(),
+        //        window_size.0 as f32,
+        //        window_size.1 as f32,
+        //    );
+        //    self.gl.draw_arrays(glow::TRIANGLES, 0, 6);
+        //}
     }
     fn draw_glyph(&self, ch: char, pos: IVec2, color: &Color) -> f32 {
         if (ch as usize) < 32 {
@@ -309,7 +314,7 @@ impl Window {
 
         // gl_attr.set_multisample_samples(4);
 
-        let vertex_buffer = unsafe { gl.create_vertex_array().expect("uh nuh uh") };
+        //let vertex_buffer = unsafe { gl.create_vertex_array().expect("uh nuh uh") };
 
         let test_shader = create_shader(&gl, include_str!("test.vert"), include_str!("test.frag"));
 
@@ -475,15 +480,16 @@ impl Window {
 }
 
 fn main() {
-    let button = SingleContainer {
+    let button = RowContainer {
         layout: Layout {
             x: Offset::Px(0.0),
             y: Offset::Px(0.0),
-            w: Offset::Px(100.0),
-            h: Offset::Px(100.0),
+            w: Offset::Percent(1.0 / 3.0),
+            h: Offset::Percent(0.1),
             anchor: Anchor::center()
         },
-        widget: Button::new("chudnite", || println!("chud"))
+        widgets: vec![Box::new(Button::new("chudnite", || println!("chud"))), Box::new(Button::new("chudnite2", || println!("chud")))],
+        spacing: 0.0
     };
 
     let mut window = Window::new(vec![Box::new(button)]);

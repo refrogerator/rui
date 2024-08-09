@@ -1,3 +1,5 @@
+use std::process::Output;
+
 use crate::DrawingContext;
 use sdl2::event::Event;
 
@@ -190,6 +192,19 @@ impl IVec2 {
     }
 }
 
+impl std::ops::AddAssign for IVec2 {
+    fn add_assign(&mut self, other: IVec2) {
+        *self = IVec2::new(self.x + other.x, self.y + other.y)
+    }
+}
+
+impl std::ops::Add for IVec2 {
+    type Output = IVec2;
+    fn add(self, other: IVec2) -> Self::Output {
+        IVec2::new(self.x + other.x, self.y + other.y)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Color {
     pub r: f32,
@@ -250,3 +265,7 @@ mod container;
 pub use container::SingleContainer;
 mod button;
 pub use button::Button;
+mod row_container;
+pub use row_container::RowContainer;
+mod column_container;
+pub use column_container::ColumnContainer;
