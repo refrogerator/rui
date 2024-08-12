@@ -10,7 +10,7 @@ fn main() {
             h: Offset::Percent(0.1),
             anchor: Anchor::center()
         },
-        widgets: vec![Box::new(Button::new("chudnite", || println!("chud"))), Box::new(Button::new("chudnite2", || println!("chud")))],
+        widgets: vec![Box::new(Button::new("button1", || println!("chud"))), Box::new(Button::new("button2", || println!("chud")))],
         spacing: 0.0
     };
 

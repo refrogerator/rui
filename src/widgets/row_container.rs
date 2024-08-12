@@ -18,7 +18,7 @@ impl Widget for RowContainer {
         let dim = self.layout.get_px_dims(self.get_size(&context), &dims);
         let size = dim.w / self.widgets.len() as f32;
         for (joe, widget) in self.widgets.iter_mut().enumerate() {
-            let dims2 = Rect { x: dim.x + size * joe as f32, y: dim.y, w: size, h: dim.h };
+            let dims2 = Rect { x: dims.x + dim.x + size * joe as f32, y: dims.y + dim.y, w: size, h: dim.h };
             widget.render(context, &dims2);
         }
     }
@@ -26,7 +26,7 @@ impl Widget for RowContainer {
         let dim = self.layout.get_px_dims(self.get_size(&context), &dims);
         let size = dim.w / self.widgets.len() as f32;
         for (joe, widget) in self.widgets.iter_mut().enumerate() {
-            let dims2 = Rect { x: dim.x + size * joe as f32, y: dim.y, w: size, h: dim.h };
+            let dims2 = Rect { x: dims.x + dim.x + size * joe as f32, y: dims.y + dim.y, w: size, h: dim.h };
             widget.handle_input(context, event, &dims2);
         }
         //let dim = self.layout.get_px_dims(self.widget.get_size(&context), &dims);
