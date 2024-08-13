@@ -6,6 +6,7 @@ use swash::scale::Source;
 
 pub mod widgets;
 pub mod prelude;
+pub mod messages;
 
 use widgets::{ColumnContainer, Rect, Widget};
 use widgets::Label;
@@ -285,13 +286,29 @@ impl DrawingContext {
     }
 }
 
-pub struct Window {
-    pub context: DrawingContext,
-    pub widgets: Vec<Box<dyn Widget>>
+pub trait App {
+    fn handle_command(&mut self, cmd: String);
 }
 
-impl Window {
-    pub fn new(widgets: Vec<Box<dyn Widget>>) -> Self {
+#[macro_export]
+macro_rules! window {
+    ( $handler:expr, $( $x:expr ),* ) => {
+        {
+            let mut temp_vec: Vec<Box<dyn Widget>> = Vec::new();
+            $(temp_vec.push(Box::new($x));)*
+            Window::new(temp_vec, $handler)
+        }
+    };
+}
+
+pub struct Window<T: App> {
+    pub context: DrawingContext,
+    pub widgets: Vec<Box<dyn Widget>>,
+    pub handler: T,
+}
+
+impl<T: App> Window<T> {
+    pub fn new(widgets: Vec<Box<dyn Widget>>, handler: T) -> Self {
         sdl2::hint::set_video_minimize_on_focus_loss(false);
         let sdl = sdl2::init().unwrap();
         let video = sdl.video().unwrap();
@@ -438,6 +455,12 @@ impl Window {
         Window {
             context,
             widgets,
+            handler
+        }
+    }
+    pub fn post_message(&mut self, msg: String) {
+        for widget in self.widgets.iter_mut() {
+            //widget.handle_message(&msg);
         }
     }
     pub fn run(&mut self) {
@@ -453,7 +476,13 @@ impl Window {
             old = std::time::Instant::now();
             for event in events.poll_iter() {
                 for widget in self.widgets.iter_mut() {
-                    widget.handle_input(&mut self.context, &event, &window_rect);
+                    let chud = widget.handle_input(&mut self.context, &event, &window_rect);
+                    if !chud.is_empty() {
+                        //println!("{:?}", chud);
+                        for cmd in chud {
+                            self.handler.handle_command(cmd);
+                        }
+                    }
                 }
                 match event {
                     sdl2::event::Event::Quit { .. } => quit = true,
@@ -471,7 +500,7 @@ impl Window {
                 self.context.gl.clear(glow::COLOR_BUFFER_BIT);
 
                 for widget in self.widgets.iter_mut() {
-                    widget.render(&mut self.context, &window_rect);
+                    let chud = widget.render(&mut self.context, &window_rect);
                 }
 
                 self.context.window.gl_swap_window();

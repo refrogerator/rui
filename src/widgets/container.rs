@@ -13,14 +13,17 @@ pub struct SingleContainer<T: Widget> {
 }
 
 impl<T: Widget> Widget for SingleContainer<T> {
-    fn render(&mut self, context: &mut DrawingContext, dims: &Rect) {
+    fn render(&mut self, context: &mut DrawingContext, dims: &Rect) -> Vec<String> {
         let dim = self.layout.get_px_dims(self.widget.get_size(&context), &dims);
-        self.widget.render(context, &dim);
+        self.widget.render(context, &dim)
     }
-    fn handle_input(&mut self, context: &mut DrawingContext, event: &Event, dims: &Rect) {
+    fn handle_input(&mut self, context: &mut DrawingContext, event: &Event, dims: &Rect) -> Vec<String> {
         let dim = self.layout.get_px_dims(self.widget.get_size(&context), &dims);
-        self.widget.handle_input(context, event, &dim);
+        self.widget.handle_input(context, event, &dim)
     }
+    //fn handle_message(&mut self, msg: &str) {
+    //    self.widget.handle_message(msg);
+    //}
     fn get_size(&self, context: &DrawingContext) -> IVec2 {
         self.widget.get_size(context)
     }

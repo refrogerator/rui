@@ -3,9 +3,22 @@ use std::process::Output;
 use crate::DrawingContext;
 use sdl2::event::Event;
 
+#[macro_export]
+macro_rules! widget_list {
+    ( $(x:expr),* ) => {
+        {
+            let temp_vec: Vec<Box<dyn Widget>> = Vec::new();
+            $(
+                temp_vec.push($x);
+            )*
+            temp_vec
+        }
+    };
+}
+
 pub trait Widget {
-    fn render(&mut self, context: &mut DrawingContext, dims: &Rect);
-    fn handle_input(&mut self, context: &mut DrawingContext, event: &Event, dims: &Rect);
+    fn render(&mut self, context: &mut DrawingContext, dims: &Rect) -> Vec<String>;
+    fn handle_input(&mut self, context: &mut DrawingContext, event: &Event, dims: &Rect) -> Vec<String>;
     fn get_size(&self, context: &DrawingContext) -> IVec2;
 }
 

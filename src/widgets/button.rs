@@ -10,6 +10,13 @@ use crate::DrawingContext;
 use super::Layout;
 use super::Offset;
 
+#[macro_export]
+macro_rules! button {
+    ($text:expr, $callback:expr) => {
+       Button::new($text, String::from($callback)) 
+    };
+}
+
 #[derive(Debug)]
 enum ButtonState {
     Normal,
@@ -17,32 +24,39 @@ enum ButtonState {
     Pressed,
 }
 
-#[derive(Debug)]
-pub struct Button {
+pub struct ButtonStyle {
     pub panel: Panel,
     pub label: Label,
     pub hovered_panel: Panel,
     pub hovered_label: Label,
     pub pressed_panel: Panel,
     pub pressed_label: Label,
-    pub callback: fn(),
+}
+
+//#[derive(Debug)]
+pub struct Button {
+    pub style: ButtonStyle,
+    pub callback: String,
     state: ButtonState,
 }
 
 impl Button {
-    pub fn new(text: &str, callback: fn()) -> Self {
-        let mut button = Button::default();
-        button.label.text = text.to_string();
-        button.hovered_label.text = text.to_string();
-        button.pressed_label.text = text.to_string();
-        button.callback = callback;
-        button
+    pub fn new(text: &str, callback: String) -> Self {
+        let mut style = ButtonStyle::default();
+        style.label.text = text.to_string();
+        style.hovered_label.text = text.to_string();
+        style.pressed_label.text = text.to_string();
+        Button {
+            style,
+            callback,
+            state: ButtonState::Normal
+        }
     }
 }
 
-impl Default for Button {
+impl Default for ButtonStyle {
     fn default() -> Self {
-        Button {
+        ButtonStyle {
             panel: Panel {
                 color: Color::from_hex("111111"),
                 rounding: Offset::Px(0.0),
@@ -70,14 +84,12 @@ impl Default for Button {
                 color: Color::from_hex("ffffff"),
                 text: "joe".to_string()
             },
-            callback: || {},
-            state: ButtonState::Normal
         }
     }
 }
 
 impl Widget for Button {
-    fn render(&mut self, context: &mut DrawingContext, dims: &Rect) {
+    fn render(&mut self, context: &mut DrawingContext, dims: &Rect) -> Vec<String> {
         let layout = Layout {
             x: Offset::Px(0.0),
             y: Offset::Px(0.0),
@@ -85,26 +97,27 @@ impl Widget for Button {
             h: Offset::Auto,
             anchor: super::Anchor::center()
         };
-        let mut dim = layout.get_px_dims(self.label.get_size(&context), &dims);
+        let mut dim = layout.get_px_dims(self.style.label.get_size(&context), &dims);
         dim.x += dims.x;
         dim.y += dims.y;
         match self.state {
             ButtonState::Normal => {
-                self.panel.render(context, dims);
-                self.label.render(context, &dim);
+                self.style.panel.render(context, dims);
+                self.style.label.render(context, &dim);
             },
             ButtonState::Hovered => {
-                self.hovered_panel.render(context, dims);
-                self.hovered_label.render(context, &dim);
+                self.style.hovered_panel.render(context, dims);
+                self.style.hovered_label.render(context, &dim);
             }
             ButtonState::Pressed => {
-                self.pressed_panel.render(context, dims);
-                self.pressed_label.render(context, &dim);
+                self.style.pressed_panel.render(context, dims);
+                self.style.pressed_label.render(context, &dim);
             }
         }
         context.draw_rounded_quad_outline(dims, &Color::from_hex("ffffff"), 0.0, 4.0);
+        Vec::new()
     }
-    fn handle_input(&mut self, context: &mut DrawingContext, event: &Event, dims: &Rect) {
+    fn handle_input(&mut self, context: &mut DrawingContext, event: &Event, dims: &Rect) -> Vec<String> {
         match *event {
             Event::MouseButtonDown { timestamp, window_id, which, mouse_btn, clicks, x: _x, y: _y } => {
                 let x = _x as f32;
@@ -112,8 +125,8 @@ impl Widget for Button {
                 match mouse_btn {
                     sdl2::mouse::MouseButton::Left => {
                         if x > dims.x && x < dims.x + dims.w && y > dims.y && y < dims.y + dims.h {
-                            (self.callback)();
                             self.state = ButtonState::Pressed;
+                            return vec![self.callback.clone()];
                         }
                     }
                     _ => {}
@@ -144,8 +157,11 @@ impl Widget for Button {
             }
             _ => {}
         }
+        Vec::new()
     }
+    //fn handle_message(&mut self, _msg: &str) {
+    //}
     fn get_size(&self, context: &DrawingContext) -> IVec2 {
-        self.label.get_size(context)
+        self.style.label.get_size(context)
     }
 }

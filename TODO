@@ -1,0 +1,1 @@
+maybe optimize commands by using refcells of the window instead of returning strings

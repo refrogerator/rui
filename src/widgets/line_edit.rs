@@ -14,7 +14,7 @@ use super::Offset;
 pub struct LineEdit {
     pub panel: Panel,
     pub label: Label,
-    pub callback: fn(),
+    //pub callback: fn(),
 }
 
 impl LineEdit {
@@ -29,7 +29,7 @@ impl LineEdit {
                 font_size: 12.0,
                 text: String::new()
             },
-            callback,
+            //callback,
         }
     }
 }
@@ -46,13 +46,13 @@ impl Default for LineEdit {
                 font_size: 12.0,
                 text: String::new()
             },
-            callback: || {},
+            //callback: || {},
         }
     }
 }
 
 impl Widget for LineEdit {
-    fn render(&mut self, context: &mut DrawingContext, dims: &Rect) {
+    fn render(&mut self, context: &mut DrawingContext, dims: &Rect) -> Vec<String> {
         let layout = Layout {
             x: Offset::Px(0.0),
             y: Offset::Px(0.0),
@@ -64,8 +64,9 @@ impl Widget for LineEdit {
         dim.x += dims.x;
         dim.y += dims.y;
         context.draw_rounded_quad_outline(dims, &Color::from_hex("ffffff"), 0.0, 4.0);
+        Vec::new()
     }
-    fn handle_input(&mut self, context: &mut DrawingContext, event: &Event, dims: &Rect) {
+    fn handle_input(&mut self, context: &mut DrawingContext, event: &Event, dims: &Rect) -> Vec<String> {
         match *event {
             Event::MouseButtonDown { timestamp, window_id, which, mouse_btn, clicks, x: _x, y: _y } => {
                 let x = _x as f32;
@@ -73,7 +74,7 @@ impl Widget for LineEdit {
                 match mouse_btn {
                     sdl2::mouse::MouseButton::Left => {
                         if x > dims.x && x < dims.x + dims.w && y > dims.y && y < dims.y + dims.h {
-                            (self.callback)();
+                            //return (self.callback)();
                             //self.state = ButtonState::Pressed;
                         }
                     }
@@ -82,6 +83,7 @@ impl Widget for LineEdit {
             }
             _ => {}
         }
+        Vec::new()
     }
     fn get_size(&self, context: &DrawingContext) -> IVec2 {
         self.label.get_size(context)

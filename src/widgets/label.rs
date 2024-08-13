@@ -17,10 +17,14 @@ pub struct Label {
 }
 
 impl Widget for Label {
-    fn render(&mut self, context: &mut DrawingContext, dims: &Rect) {
+    fn render(&mut self, context: &mut DrawingContext, dims: &Rect) -> Vec<String> {
         context.draw_text(&self.text, IVec2::new(dims.x as i32, dims.y as i32), &self.color);
+        Vec::new()
     }
-    fn handle_input(&mut self, context: &mut DrawingContext, event: &Event, dims: &Rect) {}
+    fn handle_input(&mut self, _context: &mut DrawingContext, _event: &Event, _dims: &Rect) -> Vec<String> {
+        Vec::new()
+    }
+    //fn handle_message(&mut self, _msg: &str) {}
     fn get_size(&self, context: &DrawingContext) -> IVec2 {
         let mut size = IVec2::new(0, context.get_current_font().max_advance.1 as i32);
         for ch in self.text.chars() {

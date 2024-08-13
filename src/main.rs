@@ -1,19 +1,39 @@
 use rui::widgets::*;
 use rui::Window;
+use rui::prelude::*;
+
+struct Test {
+}
+
+impl App for Test {
+    fn handle_command(&mut self, cmd: String) {
+        let mut words = cmd.split(" ");
+        if words.next().unwrap() == "print" {
+            for word in words {
+                print!("{} ", word);
+            }
+            println!("");
+        }
+    }
+}
 
 fn main() {
-    let button = RowContainer {
+    let button = SingleContainer {
         layout: Layout {
-            x: Offset::Px(0.0),
-            y: Offset::Px(0.0),
-            w: Offset::Percent(1.0 / 3.0),
-            h: Offset::Percent(0.1),
+            x: Offset::Auto,
+            y: Offset::Auto,
+            w: Offset::Percent(2.0 / 3.0),
+            h: Offset::Percent(2.0 / 3.0),
             anchor: Anchor::center()
         },
-        widgets: vec![Box::new(Button::new("button1", || println!("chud"))), Box::new(Button::new("button2", || println!("chud")))],
-        spacing: 0.0
+        widget: row_container!([
+                    button!("button1", "print chud"),
+                    button!("button2", "print chud2")
+        ], 0.0)
     };
 
-    let mut window = Window::new(vec![Box::new(button)]);
+    let handler = Test {};
+    let mut window = window!(handler, button);
     window.run();
 }
+
