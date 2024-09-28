@@ -1,4 +1,5 @@
 use rui::widgets::*;
+use rui::Value;
 use rui::Window;
 use rui::prelude::*;
 
@@ -6,34 +7,162 @@ struct Test {
 }
 
 impl App for Test {
-    fn handle_command(&mut self, cmd: String) {
+    fn handle_command(&mut self, root: WidgetRootRef, cmd: String) {
         let mut words = cmd.split(" ");
         if words.next().unwrap() == "print" {
             for word in words {
                 print!("{} ", word);
             }
             println!("");
+            let mut _root = root.modify("mama", |j| {
+                if let Value::Bool(ref mut mama) = j {
+                    *mama = !*mama;
+                }
+            });
         }
     }
+    fn update(&mut self, root: WidgetRootRef) {}
+}
+
+#[derive(Debug)]
+enum Token {
+    Ident(String),
+    Num(f32),
+    Offset(Offset),
+    Op(char)
+}
+
+fn layout(text: &str) -> Layout {
+    let mut cur_str = String::new();
+    let mut stack = Vec::new();
+    let mut output = Vec::new();
+    let mut number = false;
+    for char in text.chars() {
+        match char {
+            ',' => {
+                output.push(Token::Ident(cur_str.clone()));
+                cur_str.clear();
+                output.append(&mut stack);
+            }
+            ':' => {
+                output.push(Token::Ident(cur_str.clone()));
+                cur_str.clear();
+                stack.push(Token::Ident(":".to_string()));
+            }
+            _ => {
+                if char.is_numeric() || (char == '.' && number) {
+                    if cur_str.is_empty() {
+                        number = true;
+                    }
+                } else if char.is_whitespace() {
+                    if number {
+                        output.push(Token::Num(cur_str.parse().unwrap()));
+                        cur_str.clear();
+                        number = false;
+                    } else {
+                        if !cur_str.is_empty() {
+                            output.push(Token::Ident(cur_str.clone()));
+                            cur_str.clear();
+                        }
+                    }
+                    continue;
+                } else {
+                    if number {
+                        output.push(Token::Num(cur_str.parse().unwrap()));
+                        cur_str.clear();
+                        number = false;
+                    }
+                }
+                cur_str.push(char);
+            }
+        }
+    }
+    output.push(Token::Ident(cur_str.clone()));
+    cur_str.clear();
+    output.append(&mut stack);
+    println!("{:?}", output);
+    let mut ret = Layout::default();
+    for token in output {
+        match token {
+            Token::Ident(ref s) => {
+                match s.as_str() {
+                    "%" => {
+                        if let Token::Num(val) = stack.pop().unwrap() {
+                            stack.push(Token::Offset(Offset::Percent(val / 100.0)));
+                        } else {
+                            panic!();
+                        }
+                    }
+                    "px" => {
+                        if let Token::Num(val) = stack.pop().unwrap() {
+                            stack.push(Token::Offset(Offset::Px(val)));
+                        } else {
+                            panic!();
+                        }
+                    }
+                    ":" => {
+                        let a2 = stack.pop().unwrap();
+                        let a1 = stack.pop().unwrap();
+                        if let Token::Ident(ref name) = a1 {
+                            match a2 {
+                                Token::Offset(val) => {
+                                    match name.as_str() {
+                                        "x" => {
+                                            ret.x = val;
+                                        }
+                                        "y" => {
+                                            ret.y = val;
+                                        }
+                                        "w" => {
+                                            ret.w = val;
+                                        }
+                                        "h" => {
+                                            ret.h = val;
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                                Token::Ident(ref val) => {
+                                    match name.as_str() {
+                                        "anchor" => {
+                                            ret.anchor = Anchor::from_str(val);
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    _ => {
+                        stack.push(token);
+                    }
+                }
+            }
+            Token::Num(n) => {
+                stack.push(token);
+            }
+            _ => {}
+        }
+    }
+    ret
 }
 
 fn main() {
-    let button = SingleContainer {
-        layout: Layout {
-            x: Offset::Auto,
-            y: Offset::Auto,
-            w: Offset::Percent(2.0 / 3.0),
-            h: Offset::Percent(2.0 / 3.0),
-            anchor: Anchor::center()
-        },
-        widget: row_container!([
-                    button!("button1", "print chud"),
-                    button!("button2", "print chud2")
-        ], 0.0)
-    };
-
+    let button = layoutc!(layout("w: 33%, h: 33%"), DynamicRow {
+        base: None,
+        widget: button!("mama: {self}", "print chud"),
+        widgets: Vec::new(),
+        source: "joe".to_string(),
+        spacing: 0.0
+    });
     let handler = Test {};
-    let mut window = window!(handler, button);
+    let mut window = window!(handler, rui::KeyValues::from([
+            ("joe".to_string(), Value::Array(vec![
+                     Value::String("test".to_string()),
+                     Value::String("test2".to_string()),
+            ])),
+            ("mama".to_string(), Value::Bool(true)),
+    ]), button);
     window.run();
 }
-

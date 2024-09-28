@@ -4,6 +4,7 @@ use crate::widgets::Label;
 use crate::widgets::Panel;
 use crate::widgets::Widget;
 use crate::widgets::Rect;
+use super::WidgetBase;
 use super::{Color, IVec2};
 use crate::DrawingContext;
 
@@ -12,6 +13,7 @@ use super::Offset;
 
 #[derive(Debug)]
 pub struct LineEdit {
+    pub base: Option<WidgetBase>,
     pub panel: Panel,
     pub label: Label,
     //pub callback: fn(),
@@ -23,12 +25,15 @@ impl LineEdit {
             panel: Panel {
                 color: Color::from_hex("777777"),
                 rounding: Offset::Auto,
+                base: None,
             },
             label: Label {
                 color: Color::new(1.0, 1.0, 1.0, 1.0),
                 font_size: 12.0,
-                text: String::new()
+                text: String::new(),
+                base: None
             },
+            base: None
             //callback,
         }
     }
@@ -38,20 +43,33 @@ impl Default for LineEdit {
     fn default() -> Self {
         LineEdit {
             panel: Panel {
+                base: None,
                 color: Color::from_hex("777777"),
                 rounding: Offset::Auto,
             },
             label: Label {
                 color: Color::new(1.0, 1.0, 1.0, 1.0),
                 font_size: 12.0,
-                text: String::new()
+                text: String::new(),
+                base: None
             },
+            base: None
             //callback: || {},
         }
     }
 }
 
 impl Widget for LineEdit {
+    fn init(&mut self, base: &WidgetBase) {
+        let chud = base.clone();
+        self.base = Some(chud);
+    }
+    fn name(&self) -> &str {
+        "Panel"
+    }
+    fn get_widget_base(&mut self) -> &mut WidgetBase {
+        self.base.as_mut().unwrap()
+    }
     fn render(&mut self, context: &mut DrawingContext, dims: &Rect) -> Vec<String> {
         let layout = Layout {
             x: Offset::Px(0.0),

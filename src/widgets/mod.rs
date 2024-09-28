@@ -1,6 +1,6 @@
-use std::process::Output;
+use std::{cell::RefCell, process::Output};
 
-use crate::DrawingContext;
+use crate::{DrawingContext, KeyValues, WidgetRootRef, Value};
 use sdl2::event::Event;
 
 #[macro_export]
@@ -17,9 +17,30 @@ macro_rules! widget_list {
 }
 
 pub trait Widget {
+    fn init(&mut self, base: &WidgetBase);
     fn render(&mut self, context: &mut DrawingContext, dims: &Rect) -> Vec<String>;
     fn handle_input(&mut self, context: &mut DrawingContext, event: &Event, dims: &Rect) -> Vec<String>;
     fn get_size(&self, context: &DrawingContext) -> IVec2;
+    fn get_widget_base(&mut self) -> &mut WidgetBase;
+    fn name(&self) -> &str;
+}
+
+impl std::fmt::Debug for dyn Widget {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.name())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct WidgetBase {
+    pub root: WidgetRootRef,
+    pub local: KeyValues,
+}
+
+impl WidgetBase {
+    fn get(&self, item: &str) -> Option<Value> {
+        self.root.get(item).or(self.local.get(item).cloned())
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -77,9 +98,25 @@ impl Anchor {
     pub fn center_bottom() -> Self {
         Anchor::new(true, true, false, true)
     }
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "center" => Anchor::center(),
+            "top-left" => Anchor::top_left(),
+            "top-right" => Anchor::top_right(),
+            "bottom-left" => Anchor::bottom_left(),
+            "bottom-right" => Anchor::bottom_right(),
+            "center-left" => Anchor::center_left(),
+            "center-right" => Anchor::center_right(),
+            "center-top" => Anchor::center_top(),
+            "center-bottom" => Anchor::center_bottom(),
+            _ => {
+                panic!("invalid anchor type: {}", s);
+            }
+        }
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Offset {
     Auto,
     Px(f32),
@@ -150,6 +187,18 @@ pub struct Rect {
     pub y: f32,
     pub w: f32,
     pub h: f32,
+}
+
+impl Default for Layout {
+    fn default() -> Self {
+        Layout {
+            x: Offset::Px(0.0),
+            y: Offset::Px(0.0),
+            w: Offset::Percent(1.0),
+            h: Offset::Percent(1.0),
+            anchor: Anchor::center()
+        }
+    }
 }
 
 impl Layout {
@@ -282,5 +331,7 @@ mod row_container;
 pub use row_container::RowContainer;
 mod column_container;
 pub use column_container::ColumnContainer;
+mod dynamic_row;
+pub use dynamic_row::DynamicRow;
 mod line_edit;
 pub use line_edit::LineEdit;

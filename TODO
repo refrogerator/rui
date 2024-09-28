@@ -1,1 +1,11 @@
 maybe optimize commands by using refcells of the window instead of returning strings
+interpret part of the command in the button code
+mounted cvar
+button part kv, maybe a signal instead?
+(onclick: "mount ${part}")
+derive widget base
+
+widget registering and default handling through array/hashmap
+
+
+cvar change event

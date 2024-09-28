@@ -1,4 +1,5 @@
 use crate::DrawingContext;
+use super::WidgetBase;
 use super::{Color, IVec2};
 use crate::widgets::Rect;
 use crate::widgets::Layout;
@@ -12,6 +13,7 @@ macro_rules! row_container {
     ( [ $($x:expr),* ], $spacing:expr ) => {
         {
         RowContainer {
+            base: None,
             widgets: vec![$(Box::new($x)),*],
             spacing: $spacing
         }}
@@ -20,11 +22,22 @@ macro_rules! row_container {
 
 //#[derive(Debug)]
 pub struct RowContainer {
+    pub base: Option<WidgetBase>,
     pub widgets: Vec<Box<dyn Widget>>,
     pub spacing: f32,
 }
 
 impl Widget for RowContainer {
+    fn init(&mut self, base: &WidgetBase) {
+        let chud = base.clone();
+        self.base = Some(chud);
+    }
+    fn name(&self) -> &str {
+        "Panel"
+    }
+    fn get_widget_base(&mut self) -> &mut WidgetBase {
+        self.base.as_mut().unwrap()
+    }
     fn render(&mut self, context: &mut DrawingContext, dims: &Rect) -> Vec<String> {
         let size = dims.w / self.widgets.len() as f32;
         let mut events = Vec::new();

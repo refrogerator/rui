@@ -7,6 +7,7 @@ use swash::scale::Source;
 pub mod widgets;
 pub mod prelude;
 pub mod messages;
+pub mod keyvalues;
 
 use widgets::{ColumnContainer, Rect, Widget};
 use widgets::Label;
@@ -90,6 +91,7 @@ pub struct DrawingContext {
     pub loaded_fonts: Vec<LoadedFont>,
     pub current_font: usize,
     pub sdl: sdl2::Sdl,
+    pub mouse_state: sdl2::mouse::MouseState,
     pub window: sdl2::video::Window,
 }
 
@@ -284,31 +286,83 @@ impl DrawingContext {
 
         IVec2::new(size.0 as i32, size.1 as i32)
     }
+    pub fn get_mouse_pos(&self) -> IVec2 {
+        IVec2::new(self.mouse_state.x(), self.mouse_state.y())
+    }
+    pub fn get_mouse_button_pressed(&self, button: sdl2::mouse::MouseButton) -> bool {
+        self.mouse_state.is_mouse_button_pressed(button)
+    }
 }
 
 pub trait App {
-    fn handle_command(&mut self, cmd: String);
+    fn handle_command(&mut self, root: WidgetRootRef, cmd: String);
+    fn update(&mut self, root: WidgetRootRef);
 }
 
 #[macro_export]
 macro_rules! window {
-    ( $handler:expr, $( $x:expr ),* ) => {
+    ( $handler:expr, $keyvalues:expr, $( $x:expr ),* ) => {
         {
             let mut temp_vec: Vec<Box<dyn Widget>> = Vec::new();
             $(temp_vec.push(Box::new($x));)*
-            Window::new(temp_vec, $handler)
+            Window::new(temp_vec, $handler, $keyvalues)
         }
     };
 }
 
+#[derive(Clone, Debug)]
+pub struct WidgetRootRef {
+    pub root: std::sync::Arc<std::sync::RwLock<WidgetRoot>>
+}
+
+impl WidgetRootRef {
+    pub fn get(&self, key: &str) -> Option<Value> {
+        self.root.read().unwrap().keyvalues.get(key).cloned()
+    }
+    pub fn modify(&self, key: &str, f: impl Fn(&mut Value)) {
+        let mut root = self.root.write().unwrap();
+        f(root.keyvalues.get_mut(key).unwrap());
+    }
+}
+
+pub type KeyValues = std::collections::HashMap<String, Value>;
+
+#[derive(Debug, Clone)]
+pub enum Value {
+    KeyValue(KeyValues),
+    Bool(bool),
+    Int(i32),
+    Float(f32),
+    String(String),
+    Array(Vec<Value>),
+}
+
+impl Value {
+    fn to_str(&self) -> String {
+        match self {
+            Value::Int(val) => format!("{}", val),
+            Value::Float(val) => format!("{}", val),
+            Value::String(val) => format!("{}", val),
+            Value::Bool(val) => format!("{}", val),
+            _ => { String::new() }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct WidgetRoot {
+    pub keyvalues: KeyValues,
+}
+
 pub struct Window<T: App> {
     pub context: DrawingContext,
+    pub widget_root: WidgetRootRef,
     pub widgets: Vec<Box<dyn Widget>>,
     pub handler: T,
 }
 
 impl<T: App> Window<T> {
-    pub fn new(widgets: Vec<Box<dyn Widget>>, handler: T) -> Self {
+    pub fn new(widgets: Vec<Box<dyn Widget>>, handler: T, keyvalues: KeyValues) -> Self {
         sdl2::hint::set_video_minimize_on_focus_loss(false);
         let sdl = sdl2::init().unwrap();
         let video = sdl.video().unwrap();
@@ -328,7 +382,6 @@ impl<T: App> Window<T> {
         let gl = unsafe {
             glow::Context::from_loader_function(|s| video.gl_get_proc_address(s) as *const _)
         };
-        let mut event_loop = sdl.event_pump().unwrap();
 
         // gl_attr.set_multisample_samples(4);
 
@@ -341,7 +394,7 @@ impl<T: App> Window<T> {
         let text_shader = create_shader(&gl, include_str!("quad.vert"), include_str!("text.frag"));
 
         let mut scontext = swash::scale::ScaleContext::new();
-        let file = std::fs::read("/usr/share/fonts/liberation/LiberationSans-Regular.ttf").unwrap();
+        let file = std::fs::read("/usr/share/fonts/liberation-sans/LiberationSans-Regular.ttf").unwrap();
         let text_size = 20;
         let font_size = text_size as f32;
         let font = swash::FontRef::from_index(&file, 0).unwrap();
@@ -364,7 +417,7 @@ impl<T: App> Window<T> {
         // ]).format(swash::zeno::Format::Alpha).render(&mut scaler, glyph).unwrap();
         let metrics = font.metrics(&[]).scale(font_size);
         let glyph_metrics = font.glyph_metrics(&[]).scale(font_size);
-        println!("{:?}", metrics);
+        //println!("{:?}", metrics);
         let max_advance = (
             metrics.max_width as i16,
             (metrics.ascent + metrics.descent) as i16,
@@ -440,6 +493,10 @@ impl<T: App> Window<T> {
             gl.enable(glow::FRAMEBUFFER_SRGB);
         }
 
+        let mouse_state = {
+            sdl2::mouse::MouseState::new(&sdl.event_pump().unwrap())
+        };
+
         let context = DrawingContext {
             gl,
             gl_context,
@@ -450,10 +507,14 @@ impl<T: App> Window<T> {
             loaded_fonts,
             current_font: 0,
             sdl,
+            mouse_state, 
             window,
         };
         Window {
             context,
+            widget_root: WidgetRootRef { root: std::sync::Arc::new(std::sync::RwLock::new(WidgetRoot {
+                keyvalues,
+            }))},
             widgets,
             handler
         }
@@ -468,6 +529,10 @@ impl<T: App> Window<T> {
         let mut old = std::time::Instant::now();
         let mut events = self.context.sdl.event_pump().unwrap();
 
+        for widget in self.widgets.iter_mut() {
+            widget.init(&widgets::WidgetBase { root: self.widget_root.clone(), local: KeyValues::new() });
+        }
+
         while !quit {
             let window_size = self.context.window.drawable_size();
             let window_rect = widgets::Rect { x: 0.0, y: 0.0, w: window_size.0 as f32, h: window_size.1 as f32 };
@@ -480,7 +545,7 @@ impl<T: App> Window<T> {
                     if !chud.is_empty() {
                         //println!("{:?}", chud);
                         for cmd in chud {
-                            self.handler.handle_command(cmd);
+                            self.handler.handle_command(self.widget_root.clone(), cmd);
                         }
                     }
                 }
@@ -495,6 +560,7 @@ impl<T: App> Window<T> {
                     _ => {}
                 }
             }
+            self.context.mouse_state = sdl2::mouse::MouseState::new(&events);
 
             unsafe {
                 self.context.gl.clear(glow::COLOR_BUFFER_BIT);
