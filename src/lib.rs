@@ -323,6 +323,42 @@ impl WidgetRootRef {
         let mut root = self.root.write().unwrap();
         f(root.keyvalues.get_mut(key).unwrap());
     }
+    pub fn modify_keyvalue(&self, key: &str, f: impl Fn(&mut KeyValues)) {
+        let mut root = self.root.write().unwrap();
+        if let Value::KeyValue(ref mut i) = root.keyvalues.get_mut(key).unwrap() {
+            f(i);
+        }        
+    }
+    pub fn modify_bool(&self, key: &str, f: impl Fn(&mut bool)) {
+        let mut root = self.root.write().unwrap();
+        if let Value::Bool(ref mut i) = root.keyvalues.get_mut(key).unwrap() {
+            f(i);
+        }        
+    }
+    pub fn modify_int(&self, key: &str, f: impl Fn(&mut i32)) {
+        let mut root = self.root.write().unwrap();
+        if let Value::Int(ref mut i) = root.keyvalues.get_mut(key).unwrap() {
+            f(i);
+        }        
+    }
+    pub fn modify_float(&self, key: &str, f: impl Fn(&mut f32)) {
+        let mut root = self.root.write().unwrap();
+        if let Value::Float(ref mut i) = root.keyvalues.get_mut(key).unwrap() {
+            f(i);
+        }        
+    }
+    pub fn modify_string(&self, key: &str, f: impl Fn(&mut String)) {
+        let mut root = self.root.write().unwrap();
+        if let Value::String(ref mut i) = root.keyvalues.get_mut(key).unwrap() {
+            f(i);
+        }        
+    }
+    pub fn modify_array(&self, key: &str, f: impl Fn(&mut Vec<Value>)) {
+        let mut root = self.root.write().unwrap();
+        if let Value::Array(ref mut i) = root.keyvalues.get_mut(key).unwrap() {
+            f(i);
+        }        
+    }
 }
 
 pub type KeyValues = std::collections::HashMap<String, Value>;
