@@ -7,7 +7,6 @@ use swash::scale::Source;
 pub mod widgets;
 pub mod prelude;
 pub mod messages;
-pub mod keyvalues;
 
 use widgets::{ColumnContainer, Rect, Widget};
 use widgets::Label;

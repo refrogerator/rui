@@ -1,3 +1,4 @@
+use rui::widget_list;
 use rui::widgets::*;
 use rui::Value;
 use rui::Window;
@@ -8,6 +9,15 @@ struct Test {
 
 impl App for Test {
     fn handle_command(&mut self, root: WidgetRootRef, cmd: String) {
+        if cmd == "add_todo" {
+            let next = root.get("next").unwrap();
+            root.modify_array("todos", |todos| {
+                todos.push(next.clone());
+            });
+            root.modify_int("next", |next| {
+                *next += 1;
+            });
+        }
         let mut words = cmd.split(" ");
         if words.next().unwrap() == "print" {
             for word in words {
@@ -149,20 +159,26 @@ fn layout(text: &str) -> Layout {
 }
 
 fn main() {
-    let button = layoutc!(layout("w: 33%, h: 33%"), DynamicRow {
+    let button = button!("press for more", "add_todo");
+    let button2 = DynamicRow {
         base: None,
-        widget: button!("mama: {self}", "print chud"),
+        widget: button!("jort: {self}", "print chud"),
         widgets: Vec::new(),
-        source: "joe".to_string(),
+        source: "todos".to_string(),
         spacing: 0.0
+    };
+    let column = layoutc!(layout("w: 100%, h: 100%"), ColumnContainer {
+        base: None,
+        spacing: 0.0,
+        widgets: (vec![Box::new(button), Box::new(button2)]),
     });
     let handler = Test {};
     let mut window = window!(handler, rui::KeyValues::from([
-            ("joe".to_string(), Value::Array(vec![
+            ("todos".to_string(), Value::Array(vec![
                      Value::String("test".to_string()),
-                     Value::String("test2".to_string()),
             ])),
             ("mama".to_string(), Value::Bool(true)),
-    ]), button);
+            ("next".to_string(), Value::Int(0))
+    ]), column);
     window.run();
 }

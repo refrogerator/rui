@@ -39,8 +39,8 @@ impl Label {
             match char {
                 '{' => interp = true,
                 '}' => if interp {
-                    dbg!(&temp);
-                    dbg!(&base.local);
+                    //dbg!(&temp);
+                    //dbg!(&base.local);
                     println!("{:?}", base.get(&temp));
                     cur_str.push_str(&base.get(&temp).unwrap().to_str());
                     interp = false;

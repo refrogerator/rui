@@ -54,7 +54,7 @@ impl<T: Widget + Clone> Widget for DynamicRow<T> {
                     for i in 0..(ar.len() - self.widgets.len()) {
                         let mut new_widget = self.widget.clone();
                         new_widget.init(&WidgetBase {
-                            local: HashMap::from([(String::from("self"), ar[(if self.widgets.len() > 0 { self.widgets.len() - 1 } else { 0 }) + i].clone())]),
+                            local: HashMap::from([(String::from("self"), ar[self.widgets.len() + i].clone())]),
                             root: self.get_widget_base().root.clone()
                         });
                         self.widgets.push(new_widget);
