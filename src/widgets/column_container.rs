@@ -18,6 +18,9 @@ impl Widget for ColumnContainer {
     fn init(&mut self, base: &WidgetBase) {
         let chud = base.clone();
         self.base = Some(chud);
+        for w in &mut self.widgets {
+            w.init(base);
+        }
     }
     fn name(&self) -> &str {
         "Panel"
